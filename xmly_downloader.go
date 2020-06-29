@@ -88,7 +88,8 @@ func GetAudioInfoList(albumID, audioCount int) (audioList []AudioItem) {
 	for i := 1; i < number+1; i++ {
 		list, err := GetAudioInfo(albumID, i, 100)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
+			return audioList
 		}
 		audioList = append(audioList, list...)
 	}
@@ -100,11 +101,11 @@ func GetAudioInfoList(albumID, audioCount int) (audioList []AudioItem) {
 func GetAlbumInfo(albumID int) (title string, audioCount, pageCount int, err error) {
 	resp, err := http.Get(fmt.Sprintf("https://www.ximalaya.com/youshengshu/%d/", albumID))
 	if err != nil {
-		log.Fatal(err)
+		return "", 0, 0, fmt.Errorf("获取专辑信息失败: %v", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		log.Fatal("获取专辑信息失败: StatusCode != 200")
+		return "", -1, -1, fmt.Errorf("获取专辑信息失败: StatusCode != 200")
 	}
 
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
@@ -124,10 +125,7 @@ func GetAlbumInfo(albumID int) (title string, audioCount, pageCount int, err err
 	list := doc.Find("ul.pagination-page").Children()
 	size := list.Size()
 	if size > 6 { //超过5页
-		i, err := strconv.Atoi(list.Eq(list.Size() - 2).Text())
-		if err != nil {
-			log.Fatal(err)
-		}
+		i, _ := strconv.Atoi(list.Eq(list.Size() - 2).Text())
 		pageCount = i
 	} else if size == 0 { //仅一页
 		pageCount = 1
@@ -144,12 +142,12 @@ func GetAlbumInfoByMobileAPI(albumID int) error {
 		time.Now().Unix(), albumID, 1)
 	resp, err := httpGet(url)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	log.Println(string(data))
@@ -163,12 +161,12 @@ func GetAudioListByPageId(albumID, pageID int) (err error, ai *AudioInfoMobile) 
 		time.Now().Unix(), albumID, pageID)
 	resp, err := httpGet(url)
 	if err != nil {
-		log.Fatal(err)
+		return err, nil
 	}
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatal(err)
+		return err, nil
 	}
 
 	ai = &AudioInfoMobile{}
