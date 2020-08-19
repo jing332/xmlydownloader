@@ -68,8 +68,8 @@ func (x *Xmly) CgFun(t string) string {
 
 //DecryptUrlParams 解密URL参数
 func DecryptUrlParams(s string) (sign string, buyKey, token, timestamp int) {
-	s1 := encrypt3(s)
-	s2 := encrypt(encrypt2("d"+o+"9", u), s1)
+	s1 := decrypt3(s)
+	s2 := decrypt(decrypt2("d"+o+"9", u), s1)
 	ss := strings.Split(s2, "-")
 
 	buyKey, _ = strconv.Atoi(ss[0])
@@ -97,7 +97,7 @@ var u = []int{
 	21, 18, 3, 2, 23, 25, 27, 11, 20, 5, 15, 12, 0, 33, 26,
 }
 
-func encrypt(e string, t []int16) string {
+func decrypt(e string, t []int16) string {
 	var (
 		n = 0
 		r []int
@@ -130,7 +130,7 @@ func encrypt(e string, t []int16) string {
 	return s
 }
 
-func encrypt2(key string, key2 []int) string {
+func decrypt2(key string, key2 []int) string {
 	var n []string
 	for r := 0; r < len(key); r++ {
 		a := []rune("a")[0]
@@ -167,7 +167,7 @@ func encrypt2(key string, key2 []int) string {
 	return str
 }
 
-func encrypt3(s string) []int16 {
+func decrypt3(s string) []int16 {
 	var (
 		t    = 0
 		n    = 0
