@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -244,7 +245,9 @@ func CheckQRCodeStatus(qrID string) (status *QRCodeStatus, cookie string, err er
 		return nil, "", err
 	}
 	if status.Ret == 0 {
-		return status, resp.Header.Values("Set-Cookie")[1], nil
+		token := resp.Header.Values("Set-Cookie")[1]
+		index := strings.Index(token, ";")
+		return status, token[0:index], nil
 	}
 
 	return status, "", nil
