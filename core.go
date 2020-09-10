@@ -57,7 +57,7 @@ func GetVipAudioInfo(trackId int, cookie string) (ai *AudioInfo, err error) {
 		"https://mpay.ximalaya.com/mobile/track/pay/%d/%d?device=pc&isBackend=true&_=%d",
 		trackId, ts, ts)
 
-	resp, err := httpGetByCookie(url, cookie)
+	resp, err := HttpGetByCookie(url, cookie, Android)
 	if err != nil {
 		return ai, fmt.Errorf("获取音频信息失败: %v", err)
 	}
@@ -115,7 +115,7 @@ func GetAudioInfo(albumID, page, pageSize int) (audioList []AudioInfo, err error
 }
 
 //GetAllAudioInfo 获取所有音频信息
-func GetAllAudioInfo(albumID int) (list AudioInfoList, err error) {
+func GetAllAudioInfo(albumID int) (list []*AudioInfo, err error) {
 	firstPlayList, err := GetAudioInfoListByPageID(albumID, 0)
 	if err != nil {
 		return nil, fmt.Errorf("无法获取播放列表: 0, %s", err)
@@ -140,7 +140,7 @@ func GetAllAudioInfo(albumID int) (list AudioInfoList, err error) {
 func GetAudioInfoListByPageID(albumID, pageID int) (playlist *Playlist, err error) {
 	url := fmt.Sprintf("http://mobwsa.ximalaya.com/mobile/playlist/album/page?albumId=%d&pageId=%d",
 		albumID, pageID)
-	resp, err := httpGet(url)
+	resp, err := HttpGet(url, Android)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func GetAudioInfoListByPageID(albumID, pageID int) (playlist *Playlist, err erro
 
 //GetUserInfo 使用Cookie获取用户信息
 func GetUserInfo(cookie string) (*UserInfo, error) {
-	resp, err := httpGetByCookie("https://www.ximalaya.com/revision/main/getCurrentUser", cookie)
+	resp, err := HttpGetByCookie("https://www.ximalaya.com/revision/main/getCurrentUser", cookie, PC)
 	if err != nil {
 		return nil, err
 	}
@@ -182,52 +182,89 @@ func GetUserInfo(cookie string) (*UserInfo, error) {
 	return ui, nil
 }
 
-var client http.Client
-
-func httpGet(url string) (*http.Response, error) {
-	req, err := http.NewRequest("GET", url, nil)
+//GetAlbumInfoByMobileAPI 使用MobileV1API获取音频列表
+//
+//isAsc: true为升序(默认), false为降序
+func GetTrackListByMobile(albumID, pageID int, isAsc bool) (tracks *TrackList, err error) {
+	url := fmt.Sprintf(
+		"https://mobile.ximalaya.com/mobile/v1/album/track/ts-%d?ac=WIFI&albumId=%d&device=android&isAsc=%t&pageId=%d&pageSize=200",
+		time.Now().Unix(), albumID, isAsc, pageID)
+	resp, err := HttpGet(url, Android)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("Connection", "keep-alive")
-	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9")
-	req.Header.Set("user-agent", "ting_6.3.60(sdk,Android16)")
-
-	return client.Do(req)
-}
-
-func httpGetByCookie(url, cookie string) (*http.Response, error) {
-	req, err := http.NewRequest("GET", url, nil)
+	tracks = &TrackList{}
+	err = jsoniter.Unmarshal(data, tracks)
 	if err != nil {
 		return nil, err
 	}
-
-	req.Header.Set("Cookie", cookie)
-	req.Header.Set("Connection", "keep-alive")
-	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9")
-	req.Header.Set("user-agent", "ting_6.3.60(sdk,Android16)")
-
-	return client.Do(req)
+	return tracks, nil
 }
 
-//GetAlbumInfoByMobileAPI 使用Mobile API获取专辑信息
-//func GetAlbumInfoByMobileAPI(albumID int) error {
-//	url := fmt.Sprintf(
-//		"https://mobile.ximalaya.com/mobile/v1/album/track/ts-%d?ac=4G&albumID=%d&device=android&isAsc=true&pageId=%d&pageSize=200&pre_page=0&source=0&supportWebp=false",
-//		time.Now().Unix(), albumID, 1)
-//	resp, err := httpGet(url)
+//GetQRCode 获取登录二维码
+func GetQRCode() (qrCode *QRCode, err error) {
+	resp, err := HttpGet("https://passport.ximalaya.com/web/qrCode/gen?level=L", PC)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	qrCode = &QRCode{}
+	err = jsoniter.Unmarshal(data, qrCode)
+	if err != nil {
+		return nil, err
+	}
+	return qrCode, err
+}
+
+//CheckQRCodeStatus 检查二维码的状态
+func CheckQRCodeStatus(qrID string) (status *QRCodeStatus, cookie string, err error) {
+	url := fmt.Sprintf("https://passport.ximalaya.com/web/qrCode/check/%s/%d", qrID, time.Now().Unix())
+	resp, err := HttpGet(url, PC)
+	if err != nil {
+		return nil, "", err
+	}
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, "", err
+	}
+	status = &QRCodeStatus{}
+	err = jsoniter.Unmarshal(data, status)
+	if err != nil {
+		return nil, "", err
+	}
+	if status.Ret == 0 {
+		return status, resp.Header.Values("Set-Cookie")[1], nil
+	}
+
+	return status, "", nil
+}
+
+////GetVipTrackInfoByMobile 使用Cookie获取VIP音频信息
+//func GetTrackInfoByMobile(trackID, cookie string) error {
+//	url := fmt.Sprintf("https://mpay.ximalaya.com/mobile/track/pay/%d/%d?device=android",
+//		time.Now().Unix(), trackID)
+//	resp, err := HttpGet(url)
 //	if err != nil {
 //		return err
 //	}
 //	defer resp.Body.Close()
+//
 //	data, err := ioutil.ReadAll(resp.Body)
 //	if err != nil {
 //		return err
 //	}
 //
-//	log.Println(string(data))
-//	return nil
 //}
 
 //func GetAudioInfoByMobile(trackID int, cookie string) error {
@@ -265,7 +302,7 @@ func httpGetByCookie(url, cookie string) (*http.Response, error) {
 //}
 //
 //func GetXmMd5() (string, error) {
-//	resp, err := httpGet("https://www.ximalaya.com/revision/time")
+//	resp, err := HttpGet("https://www.ximalaya.com/revision/time")
 //	if err != nil {
 //		return "", err
 //	}
