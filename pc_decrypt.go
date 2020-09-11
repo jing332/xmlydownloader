@@ -1,7 +1,6 @@
 package xmlydownloader
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -125,7 +124,7 @@ func decrypt(e string, t []int16) string {
 		n = r[o]
 		r[o] = r[a]
 		r[a] = n
-		s += fmt.Sprint(int(t[u]) ^ (r[(r[o]+r[a])%256]))
+		s += string(int32(t[u]) ^ int32(r[(r[o]+r[a])%256]))
 	}
 
 	return s
@@ -150,9 +149,9 @@ func decrypt2(key string, key2 []int) string {
 		}
 
 		if 25 < a {
-			n[r] = fmt.Sprint(int16(a) - 26 + 48)
+			n[r] = string(a - 26 + 48)
 		} else {
-			n[r] = fmt.Sprint(int16(a) + 97)
+			n[r] = string(a + 97)
 		}
 	}
 
