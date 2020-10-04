@@ -161,6 +161,27 @@ func GetAudioInfoListByPageID(albumID, pageID int) (playlist *Playlist, err erro
 	return playlist, nil
 }
 
+//GetTrackList 获取音频列表
+//
+//isAsc: true为升序(默认), false为降序
+func GetTrackList(albumID, pageID int, isAsc bool) (tracks *TrackList, err error) {
+	url := fmt.Sprintf(
+		"https://mobile.ximalaya.com/mobile/v1/album/track/ts-%d?ac=WIFI&albumId=%d&device=android&isAsc=%t&pageId=%d&pageSize=200",
+		time.Now().Unix(), albumID, isAsc, pageID)
+	resp, err := HttpGet(url, Android)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	tracks = &TrackList{}
+	err = jsoniter.NewDecoder(resp.Body).Decode(tracks)
+	if err != nil {
+		return nil, err
+	}
+	return tracks, nil
+}
+
 //GetUserInfo 使用Cookie获取用户信息
 func GetUserInfo(cookie string) (*UserInfo, error) {
 	resp, err := HttpGetByCookie("https://www.ximalaya.com/revision/main/getCurrentUser", cookie, PC)
@@ -181,31 +202,6 @@ func GetUserInfo(cookie string) (*UserInfo, error) {
 	}
 
 	return ui, nil
-}
-
-//GetAlbumInfoByMobileAPI 使用MobileV1API获取音频列表
-//
-//isAsc: true为升序(默认), false为降序
-func GetTrackListByMobile(albumID, pageID int, isAsc bool) (tracks *TrackList, err error) {
-	url := fmt.Sprintf(
-		"https://mobile.ximalaya.com/mobile/v1/album/track/ts-%d?ac=WIFI&albumId=%d&device=android&isAsc=%t&pageId=%d&pageSize=200",
-		time.Now().Unix(), albumID, isAsc, pageID)
-	resp, err := HttpGet(url, Android)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	tracks = &TrackList{}
-	err = jsoniter.Unmarshal(data, tracks)
-	if err != nil {
-		return nil, err
-	}
-	return tracks, nil
 }
 
 //GetQRCode 获取登录二维码

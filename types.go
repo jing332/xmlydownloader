@@ -113,8 +113,8 @@ type Playlist struct {
 //VipTrackInfo VIP音频信息(MobileAPI)
 //
 //需使用 Java unidbg库 解密音频URL
-//unidbg: https://hub.fastgit.org/zhkl0228/unidbg
-type VipTrackInfo struct {
+//unidbg: https://github.com/zhkl0228/unidbg
+type ChargeTrackInfo struct {
 	Ret                  int    `json:"ret"`
 	Msg                  string `json:"msg"`
 	TrackID              int    `json:"trackId"`
