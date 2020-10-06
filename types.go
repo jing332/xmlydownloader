@@ -1,5 +1,42 @@
 package xmlydownloader
 
+const (
+	FreeAlbumType = iota << 1 //免费专辑类型
+	VipAlbumType              //VIP专辑类型
+	PaidAlbumType             //付费专辑类型
+)
+
+type AlbumInfo struct {
+	Msg               string `json:"msg"`
+	Ret               int    `json:"ret"`
+	CostTimeAlbumInfo int    `json:"costTimeAlbumInfo"`
+	Data              struct {
+		Album struct {
+			AlbumID     int    `json:"albumId"`
+			Title       string `json:"title"`
+			IsPaid      bool   `json:"isPaid"`
+			TrackCount  int    `json:"tracks"`
+			VipFreeType int    `json:"vipFreeType"`
+			PriceTypes  []struct {
+				FreeTrackIds   string `json:"freeTrackIds"`
+				FreeTrackCount int    `json:"freeTrackCount"`
+			} `json:"priceTypes"`
+			IsFinished int `json:"isFinished"`
+		} `json:"album"`
+	}
+}
+
+func (ai *AlbumInfo) AlbumType() int {
+	if ai.Data.Album.IsPaid {
+		if ai.Data.Album.VipFreeType == 0 {
+			return PaidAlbumType
+		}
+		return VipAlbumType
+	} else {
+		return FreeAlbumType
+	}
+}
+
 //TrackInfo 音频信息(MobileV1API)
 //
 //TrackList

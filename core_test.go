@@ -5,6 +5,15 @@ import (
 	"testing"
 )
 
+func TestGetAlbumInfo(t *testing.T) {
+	albumID := 2780581 //https://www.ximalaya.com/youshengshu/2780581/
+	ai, err := GetAlbumInfo(albumID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%+v", ai)
+}
+
 func TestGetAllTrackList(t *testing.T) {
 	var trackInfoList []*TrackInfo
 	albumID := 2780581 //https://www.ximalaya.com/youshengshu/2780581/

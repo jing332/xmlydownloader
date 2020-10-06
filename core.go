@@ -4,51 +4,26 @@ import (
 	"fmt"
 	jsoniter "github.com/json-iterator/go"
 	"io/ioutil"
-	"net/http"
-	"regexp"
-	"strconv"
 	"strings"
 	"time"
-
-	"github.com/PuerkitoBio/goquery"
 )
 
 //GetAlbumInfo 获取专辑信息
-func GetAlbumInfo(albumID int) (title string, audioCount, pageCount int, err error) {
-	resp, err := http.Get(fmt.Sprintf("https://www.ximalaya.com/youshengshu/%d/", albumID))
+func GetAlbumInfo(albumID int) (ai *AlbumInfo, err error) {
+	url := fmt.Sprintf("http://mobile.ximalaya.com/mobile-album/album/page/ts-%d?ac=WIFI&albumId=%d&device=android&pageId=1&pageSize=0",
+		time.Now().Unix(), albumID)
+	resp, err := HttpGet(url, Android)
 	if err != nil {
-		return "", 0, 0, fmt.Errorf("获取专辑信息失败: %v", err)
+		return nil, fmt.Errorf("无法获取专辑信息: %v", err)
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return "", -1, -1, fmt.Errorf("获取专辑信息失败: StatusCode != 200")
-	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	ai = &AlbumInfo{}
+	err = jsoniter.NewDecoder(resp.Body).Decode(ai)
 	if err != nil {
-		return "", -1, -1, fmt.Errorf("new goquery document fail:" + err.Error())
+		return nil, fmt.Errorf("无法获取专辑信息: 无法解析Json: %v", err)
 	}
-
-	//标题
-	title = doc.Find("h1.title").Text()
-
-	//音频数量
-	r, _ := regexp.Compile("\\d+\\.?\\d*")
-	num := r.FindString(doc.Find("div.head").Text())
-	audioCount, _ = strconv.Atoi(num)
-
-	//页面数量
-	list := doc.Find("ul.pagination-page").Children()
-	size := list.Size()
-	if size > 6 { //超过5页
-		i, _ := strconv.Atoi(list.Eq(list.Size() - 2).Text())
-		pageCount = i
-	} else if size == 0 { //仅一页
-		pageCount = 1
-	} else { //大于0页 && 小于等于5页
-		pageCount = size - 1 //1为下一页按钮
-	}
-	return
+	return ai, nil
 }
 
 //GetVipAudioInfo 获取VIP音频信息
