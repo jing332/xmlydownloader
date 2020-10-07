@@ -1,9 +1,9 @@
 package xmlydownloader
 
 const (
-	FreeAlbumType = iota << 1 //免费专辑类型
-	VipAlbumType              //VIP专辑类型
-	PaidAlbumType             //付费专辑类型
+	FreeAlbumType = iota //免费专辑类型
+	VipAlbumType         //VIP专辑类型
+	PaidAlbumType        //付费专辑类型
 )
 
 type AlbumInfo struct {

@@ -10,7 +10,7 @@ const (
 )
 
 const (
-	PC = 1 << iota
+	PC = iota
 	Android
 )
 
